@@ -1,172 +1,95 @@
 package ru.inurgalimov.http;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.inurgalimov.http.exception.BadHeaderException;
 import ru.inurgalimov.http.exception.MalFormedRequestException;
-import ru.inurgalimov.http.guava.Bytes;
+import ru.inurgalimov.http.exception.NotUniquePathException;
+import ru.inurgalimov.http.exception.UnsupportedMethodException;
+import ru.inurgalimov.http.handler.RequestHandler;
+import ru.inurgalimov.http.handler.RequestHandlerImpl;
+import ru.inurgalimov.http.handler.ResponseHandler;
+import ru.inurgalimov.http.handler.ResponseHandlerImpl;
+import ru.inurgalimov.http.request.HttpRequest;
+import ru.inurgalimov.http.response.HttpResponse;
+import ru.inurgalimov.http.utils.HttpStatus;
+import ru.inurgalimov.http.utils.HttpVersion;
+import ru.inurgalimov.http.utils.Method;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
+import java.util.function.BiConsumer;
+
+import static ru.inurgalimov.http.utils.Method.GET;
+import static ru.inurgalimov.http.utils.Method.POST;
 
 public class Server {
-  public static final String GET = "GET";
-  public static final String POST = "POST";
-  public static final Set<String> allowedMethods = Set.of(GET, POST);
-  public static final Set<String> supportedHTTPVersions = Set.of("HTTP/1.1");
 
-  public void listen(int port) {
-    try (
-        final var serverSocket = new ServerSocket(port);
-    ) {
-      while (true) {
-        try {
-          final var socket = serverSocket.accept();
-          handleConnection(socket);
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
+    private final Logger logger = LoggerFactory.getLogger(Server.class);
+    private final Map<Method, Map<String, BiConsumer<HttpRequest, HttpResponse>>> handlersStorage = new EnumMap<>(Method.class);
+    private final RequestHandler requestHandler = new RequestHandlerImpl();
+    private final ResponseHandler responseHandler = new ResponseHandlerImpl();
+
+    public Server() {
+        Arrays.stream(Method.values()).forEach(method -> handlersStorage.put(method, new HashMap<>()));
     }
-  }
 
-  private void handleConnection(Socket socket) {
-    try (
-        socket;
-        final var in = new BufferedInputStream(socket.getInputStream());
-        final var out = new BufferedOutputStream(socket.getOutputStream());
-    ) {
-      // request/headers/body
-      // client <-> bad g*s -> slow clients
-      // 1 байт в 1 секунду -> timeout 30 сек
-      // large request
-      try {
-        final var buffer = new byte[4096]; // request line - headers < 4Кб
-        in.mark(4096);
+    public void registerGetHandler(String path, BiConsumer<HttpRequest, HttpResponse> handler) {
+        registerHandler(path, handler, handlersStorage.get(GET));
+    }
 
-        // Content-Length | GET -> фиговый
-        final var read = in.read(buffer);
-        final var CRLF = new byte[]{'\r', '\n'};
+    public void registerPostHandler(String path, BiConsumer<HttpRequest, HttpResponse> handler) {
+        registerHandler(path, handler, handlersStorage.get(POST));
+    }
 
-        // mark + reset + markSupported
-
-        final var requestLineEndIndex = Bytes.indexOf(buffer, CRLF, 0, read) + CRLF.length;
-        if (requestLineEndIndex == -1) {
-          throw new MalFormedRequestException();
+    private void registerHandler(String path, BiConsumer<HttpRequest, HttpResponse> handler,
+                                 Map<String, BiConsumer<HttpRequest, HttpResponse>> storage) {
+        if (storage.containsKey(path)) {
+            throw new NotUniquePathException("This path has already was registered before");
         }
+        storage.put(path, handler);
+    }
 
-        final var requestLineParts = new String(buffer, 0, requestLineEndIndex)
-            .trim()
-            .split(" ");
-
-        if (requestLineParts.length != 3) {
-//                    throw new InvalidRequestLineException();
-          throw new RuntimeException("requestLine");
-        }
-
-        final var method = requestLineParts[0];
-        final var uri = requestLineParts[1];
-        final var version = requestLineParts[2];
-
-        if (!allowedMethods.contains(method)) {
-          throw new RuntimeException("invalid header: " + method);
-        }
-
-        if (!uri.startsWith("/")) {
-          throw new RuntimeException("invalid uri: " + uri);
-        }
-
-        if (!supportedHTTPVersions.contains(version)) {
-          throw new RuntimeException("invalid version: " + version);
-        }
-
-        if (method.equals(GET)) {
-          // TODO: в будущем вычитать все header
-          // TODO: вызывать обработчик
-
-          final var body = "OK";
-          out.write(
-              (
-                  "HTTP/1.1 200 OK\r\n" +
-                      "Content-Type: text/plain\r\n" +
-                      "Content-Length: " + body.length() + "\r\n" +
-                      "Connection: close\r\n" +
-                      "\r\n" +
-                      body
-              ).getBytes());
-          return;
-        }
-
-        final var CRLFCRLF = new byte[]{'\r', '\n', '\r', '\n'};
-        final var headersEndIndex = Bytes.indexOf(buffer, CRLFCRLF, requestLineEndIndex, read) + CRLFCRLF.length;
-        var contentLength = 0;
-
-        // FIXME: refactor to method
-        var lastIndex = requestLineEndIndex;
-        while (true) {
-          final var headerEndIndex = Bytes.indexOf(buffer, CRLF, lastIndex, headersEndIndex) + CRLF.length;
-          if (headerEndIndex == -1) {
-            throw new MalFormedRequestException();
-          }
-          final var headerLine = new String(buffer, lastIndex, headerEndIndex - lastIndex);
-
-          if (headerLine.startsWith("Content-Length")) {
-            // TODO:
-            final var headerParts = Arrays.stream(headerLine.split(":"))
-                .map(String::trim)
-                .collect(Collectors.toList());
-
-            if (headerParts.size() != 2) {
-              throw new RuntimeException("bad Content-Length: " + headerLine);
+    public void listen(int port) {
+        try (final var serverSocket = new ServerSocket(port)) {
+            while (true) {
+                try {
+                    final var socket = serverSocket.accept();
+                    handleConnection(socket);
+                } catch (RuntimeException e) {
+                    logger.info("Handling request error", e);
+                } catch (IOException e) {
+                    logger.error("Socket server error", e);
+                }
             }
-
-            contentLength = Integer.parseInt(headerParts.get(1));
-            break;
-          }
-
-          lastIndex = headerEndIndex;
+        } catch (IOException e) {
+            logger.error("Error creating socket server", e);
         }
-        in.reset();
-
-        final var totalSize = headersEndIndex + contentLength;
-        final var fullRequestBytes = in.readNBytes(totalSize);
-
-        final var body = "Read: " + fullRequestBytes.length;
-        out.write(
-            (
-                "HTTP/1.1 200 OK\r\n" +
-                    "Content-Type: text/plain\r\n" +
-                    "Content-Length: " + body.length() + "\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n" +
-                    body
-            ).getBytes());
-        return;
-
-        // TODO: find handler & call it
-
-        // TODO: HttpRequest ->
-        // 1. Method -> GET/POST | getHeader
-        // 2. Uri (path/query) | getUri
-        // 3. Version | getVersion
-        // 4. Headers | get
-        // 5. Body []byte
-
-        // TODO: HttpResponse
-        // 1. StatusCode | setStatusCode
-        // 2. StatusText - OK | setStatusText
-        // 3. Headers - | setHeader()
-        // 4. Body []byte - |
-      } catch (MalFormedRequestException e) {
-        // out есть
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
     }
-  }
+
+    private void handleConnection(Socket socket) throws IOException {
+        try (socket;
+             final var in = new BufferedInputStream(socket.getInputStream());
+             final var out = new BufferedOutputStream(socket.getOutputStream())) {
+
+            HttpRequest request = requestHandler.handleRequest(in);
+            HttpResponse response = HttpResponse.builder().build();
+            handlersStorage.get(request.getMethod())
+                    .getOrDefault(request.getUri(), this::defaultHandling)
+                    .accept(request, response);
+            responseHandler.handleResponse(response, out);
+        }
+    }
+
+    private void defaultHandling(HttpRequest request, HttpResponse response) {
+        response.setVersion(HttpVersion.HTTP_VERSION_11);
+        response.setBody(new byte[0]);
+        response.setHeaders(Map.of("Content-Length", "0"));
+        response.setStatus(HttpStatus.NOT_FOUND);
+    }
+
 }

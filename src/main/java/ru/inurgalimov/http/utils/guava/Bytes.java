@@ -1,10 +1,14 @@
-package ru.inurgalimov.http.guava;
+package ru.inurgalimov.http.utils.guava;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class Bytes {
+
     /**
      * from guava library (as it is)
      */
-    public static int indexOf(byte[] array, byte[] target, int start, int end) {
+    public int indexOf(byte[] array, byte[] target, int start) {
         if (target.length == 0) {
             return 0;
         }
