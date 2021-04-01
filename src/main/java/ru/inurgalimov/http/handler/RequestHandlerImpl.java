@@ -1,5 +1,6 @@
 package ru.inurgalimov.http.handler;
 
+import org.springframework.stereotype.Component;
 import ru.inurgalimov.http.exception.BadHeaderException;
 import ru.inurgalimov.http.exception.EmptyRequestException;
 import ru.inurgalimov.http.exception.MalFormedRequestException;
@@ -10,7 +11,6 @@ import ru.inurgalimov.http.utils.guava.Bytes;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import static ru.inurgalimov.http.utils.Method.POST;
 
+@Component
 public class RequestHandlerImpl implements RequestHandler {
 
     private static final byte[] END_OF_LINE = new byte[]{'\r', '\n'};

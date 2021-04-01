@@ -1,5 +1,6 @@
 package ru.inurgalimov.http.handler;
 
+import org.springframework.stereotype.Component;
 import ru.inurgalimov.http.response.HttpResponse;
 import ru.inurgalimov.http.utils.HttpStatus;
 import ru.inurgalimov.http.utils.HttpVersion;
@@ -9,10 +10,10 @@ import java.io.OutputStream;
 import java.util.Objects;
 import java.util.Optional;
 
+@Component
 public class ResponseHandlerImpl implements ResponseHandler {
 
     private static final String END_OF_LINE = "\r\n";
-    private static final String LINE_BREAK = "\r\n\r\n";
 
     @Override
     public void handleResponse(HttpResponse response, OutputStream output) throws IOException {
@@ -21,6 +22,7 @@ public class ResponseHandlerImpl implements ResponseHandler {
         fillCorrectContentLength(response);
         answer.append(getHeaders(response));
         output.write(joinByteArray(answer.toString().getBytes(), response.getBody()));
+        output.flush();
     }
 
     private String getRequestLine(HttpResponse response) {
@@ -43,7 +45,7 @@ public class ResponseHandlerImpl implements ResponseHandler {
         }
         StringBuilder headers = new StringBuilder();
         response.getHeaders().forEach((k, v) -> headers.append(k).append(": ").append(v).append(END_OF_LINE));
-        return headers.append(LINE_BREAK).toString();
+        return headers.append(END_OF_LINE).toString();
     }
 
     private void fillCorrectContentLength(HttpResponse response) {
