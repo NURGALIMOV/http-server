@@ -15,7 +15,7 @@ public class JavaConfig {
 
     @Bean
     public Map<Method, Map<String, Function<HttpRequest, Object>>> routMap() {
-        final var result = new EnumMap<Method, Map<String, Function<HttpRequest, Object>>>(Method.class);
+        Map result = new EnumMap<Method, Map<String, Function<HttpRequest, Object>>>(Method.class);
         Arrays.stream(Method.values()).forEach(method -> result.put(method, new HashMap<>()));
         return result;
     }

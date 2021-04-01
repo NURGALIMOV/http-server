@@ -8,7 +8,6 @@ import ru.inurgalimov.http.utils.HttpVersion;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Objects;
-import java.util.Optional;
 
 @Component
 public class ResponseHandlerImpl implements ResponseHandler {
@@ -19,7 +18,6 @@ public class ResponseHandlerImpl implements ResponseHandler {
     public void handleResponse(HttpResponse response, OutputStream output) throws IOException {
         StringBuilder answer = new StringBuilder();
         answer.append(getRequestLine(response));
-        fillCorrectContentLength(response);
         answer.append(getHeaders(response));
         output.write(joinByteArray(answer.toString().getBytes(), response.getBody()));
         output.flush();
@@ -41,27 +39,11 @@ public class ResponseHandlerImpl implements ResponseHandler {
 
     private String getHeaders(HttpResponse response) {
         if (Objects.isNull(response) || Objects.isNull(response.getHeaders())) {
-            return "";
+            return END_OF_LINE;
         }
         StringBuilder headers = new StringBuilder();
         response.getHeaders().forEach((k, v) -> headers.append(k).append(": ").append(v).append(END_OF_LINE));
         return headers.append(END_OF_LINE).toString();
-    }
-
-    private void fillCorrectContentLength(HttpResponse response) {
-        final var key = "Content-Length";
-        if (Objects.nonNull(response.getBody())) {
-            Optional.ofNullable(response.getHeaders())
-                    .map(headers -> headers.get(key))
-                    .ifPresentOrElse(length -> {
-                        int contentLength = Integer.parseInt(length);
-                        if (contentLength != response.getBody().length) {
-                            response.getHeaders().put(key, String.valueOf(response.getBody().length));
-                        }
-                    }, () -> response.getHeaders().put(key, String.valueOf(response.getBody().length)));
-        } else {
-            Optional.ofNullable(response.getHeaders()).ifPresent(headers -> headers.remove(key));
-        }
     }
 
     private byte[] joinByteArray(final byte[] array1, final byte[] array2) {

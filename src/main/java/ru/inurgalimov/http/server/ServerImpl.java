@@ -11,9 +11,7 @@ import ru.inurgalimov.http.utils.HttpStatus;
 import ru.inurgalimov.http.utils.HttpVersion;
 import ru.inurgalimov.http.utils.Method;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -51,7 +49,7 @@ public class ServerImpl extends AbstractServer {
     }
 
     @Override
-    protected void handle(BufferedInputStream in, BufferedOutputStream out) throws IOException {
+    protected void handle(InputStream in, OutputStream out) throws IOException {
         HttpRequest request = requestHandler.handleRequest(in);
         HttpResponse response = HttpResponse.builder()
                 .build();

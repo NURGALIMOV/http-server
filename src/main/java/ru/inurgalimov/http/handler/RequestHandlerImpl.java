@@ -11,10 +11,7 @@ import ru.inurgalimov.http.utils.guava.Bytes;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static ru.inurgalimov.http.utils.Method.POST;
@@ -27,19 +24,19 @@ public class RequestHandlerImpl implements RequestHandler {
 
     @Override
     public HttpRequest handleRequest(InputStream input) throws IOException {
-        final var buffer = new byte[4096];
+        byte[] buffer = new byte[4096];
         input.mark(4096);
         if (input.read(buffer) > 0) {
-            final var requestLineIndex = Bytes.indexOf(buffer, END_OF_LINE, 0) + END_OF_LINE.length;
+            int requestLineIndex = Bytes.indexOf(buffer, END_OF_LINE, 0) + END_OF_LINE.length;
             String[] requestLineParts = getRequestLineParts(buffer, requestLineIndex);
             Method method = Method.valueOfByString(requestLineParts[0]);
             String uri = requestLineParts[1];
             HttpVersion version = HttpVersion.valueOfByString(requestLineParts[2]);
 
-            final var endHeaderIndex = Bytes.indexOf(buffer, LINE_BREAK, 0);
+            int endHeaderIndex = Bytes.indexOf(buffer, LINE_BREAK, 0);
             Map<String, String> headers = getHeaders(buffer, requestLineIndex, endHeaderIndex);
 
-            final var contentLength = Optional.ofNullable(headers.get("Content-Length"))
+            int contentLength = Optional.ofNullable(headers.get("Content-Length"))
                     .map(Integer::parseInt)
                     .orElse(0);
             byte[] body = new byte[0];
@@ -69,16 +66,16 @@ public class RequestHandlerImpl implements RequestHandler {
     }
 
     private Map<String, String> getHeaders(byte[] source, int startHeaderIndex, int endHeaderIndex) {
-        final Map<String, String> result = new HashMap<>();
-        var lastIndex = startHeaderIndex;
-        var currentIndex = 0;
+        Map<String, String> result = new HashMap<>();
+        int lastIndex = startHeaderIndex;
+        int currentIndex = 0;
         do {
             currentIndex = Bytes.indexOf(source, END_OF_LINE, lastIndex) + END_OF_LINE.length;
             if (currentIndex == -1) {
                 throw new MalFormedRequestException();
             }
-            final var headerLine = new String(source, lastIndex, currentIndex - lastIndex);
-            final var headerParts = Arrays.stream(headerLine.split(":"))
+            String headerLine = new String(source, lastIndex, currentIndex - lastIndex);
+            List<String> headerParts = Arrays.stream(headerLine.split(":"))
                     .map(String::trim)
                     .collect(Collectors.toList());
             if (headerParts.size() != 2) {

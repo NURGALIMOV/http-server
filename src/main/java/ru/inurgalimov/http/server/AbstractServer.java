@@ -3,9 +3,7 @@ package ru.inurgalimov.http.server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -15,10 +13,10 @@ public abstract class AbstractServer implements Server {
 
     @Override
     public void listen(int port) {
-        try (final var serverSocket = new ServerSocket(port)) {
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
             while (true) {
                 try {
-                    final var socket = serverSocket.accept();
+                    Socket socket = serverSocket.accept();
                     handleConnection(socket);
                 } catch (RuntimeException e) {
                     logger.info("Handling request error", e);
@@ -39,6 +37,6 @@ public abstract class AbstractServer implements Server {
         }
     }
 
-    protected abstract void handle(BufferedInputStream in, BufferedOutputStream out) throws IOException;
+    protected abstract void handle(InputStream in, OutputStream out) throws IOException;
 
 }
