@@ -7,7 +7,7 @@ import ru.inurgalimov.http.handler.ResponseHandler;
 import ru.inurgalimov.http.handler.ResponseHandlerImpl;
 import ru.inurgalimov.http.request.HttpRequest;
 import ru.inurgalimov.http.response.HttpResponse;
-import ru.inurgalimov.http.utils.Method;
+import ru.inurgalimov.http.utils.HttpMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,17 +18,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-import static ru.inurgalimov.http.utils.Method.GET;
-import static ru.inurgalimov.http.utils.Method.POST;
+import static ru.inurgalimov.http.utils.HttpMethod.GET;
+import static ru.inurgalimov.http.utils.HttpMethod.POST;
 
 public class ServerImpl extends AbstractServer {
 
-    private final Map<Method, Map<String, BiConsumer<HttpRequest, HttpResponse>>> handlersStorage = new EnumMap<>(Method.class);
+    private final Map<HttpMethod, Map<String, BiConsumer<HttpRequest, HttpResponse>>> handlersStorage = new EnumMap<>(HttpMethod.class);
     private final RequestHandler requestHandler = new RequestHandlerImpl();
     private final ResponseHandler responseHandler = new ResponseHandlerImpl();
 
     public ServerImpl() {
-        Arrays.stream(Method.values())
+        Arrays.stream(HttpMethod.values())
                 .forEach(method -> handlersStorage.put(method, new HashMap<>()));
     }
 

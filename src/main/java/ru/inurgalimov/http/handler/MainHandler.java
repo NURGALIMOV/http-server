@@ -9,7 +9,7 @@ import ru.inurgalimov.http.request.HttpRequest;
 import ru.inurgalimov.http.response.HttpResponse;
 import ru.inurgalimov.http.utils.HttpStatus;
 import ru.inurgalimov.http.utils.HttpVersion;
-import ru.inurgalimov.http.utils.Method;
+import ru.inurgalimov.http.utils.HttpMethod;
 import ru.inurgalimov.http.utils.UrlParsingUtils;
 
 import java.util.HashMap;
@@ -22,7 +22,7 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class MainHandler implements Handler {
 
-    private final Map<Method, Map<String, Function<HttpRequest, Object>>> routeMap;
+    private final Map<HttpMethod, Map<String, Function<HttpRequest, Object>>> routeMap;
     private final Map<Class<?>, AnswerAdapter<?>> adapters;
 
     @Override

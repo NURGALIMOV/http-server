@@ -3,7 +3,7 @@ package ru.inurgalimov.http.request;
 import lombok.Builder;
 import lombok.Getter;
 import ru.inurgalimov.http.utils.HttpVersion;
-import ru.inurgalimov.http.utils.Method;
+import ru.inurgalimov.http.utils.HttpMethod;
 
 import java.util.Map;
 
@@ -11,7 +11,7 @@ import java.util.Map;
 @Builder
 public class HttpRequest {
 
-    private final Method method;
+    private final HttpMethod method;
     private final String uri;
     private final HttpVersion version;
     private final Map<String, String> headers;

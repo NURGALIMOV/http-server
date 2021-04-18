@@ -7,23 +7,27 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import ru.inurgalimov.http.adapter.RequestBodyAdapter;
-import ru.inurgalimov.http.annotation.*;
+import ru.inurgalimov.http.annotation.GetMapping;
+import ru.inurgalimov.http.annotation.PostMapping;
+import ru.inurgalimov.http.handler.ArgumentResolver;
+import ru.inurgalimov.http.handler.ArgumentResolverImpl;
 import ru.inurgalimov.http.request.HttpRequest;
-import ru.inurgalimov.http.utils.Method;
+import ru.inurgalimov.http.utils.HttpMethod;
 import ru.inurgalimov.http.utils.UrlParsingUtils;
 
-import java.lang.reflect.Parameter;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Component
 @RequiredArgsConstructor
 public class ControllerBeanPostProcessor implements BeanPostProcessor {
 
-    private final Map<Method, Map<String, Function<HttpRequest, Object>>> routMap;
+    private final Map<HttpMethod, Map<String, Function<HttpRequest, Object>>> routMap;
     private final Map<String, Class<?>> requiredClassesMap;
     private final RequestBodyAdapter requestBodyAdapter;
 
@@ -44,39 +48,28 @@ public class ControllerBeanPostProcessor implements BeanPostProcessor {
         String rootPath = clazz.getAnnotation(Controller.class).value();
         for (var method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(GetMapping.class)) {
-                String path = String.format("/%s/%s", rootPath, method.getAnnotation(GetMapping.class).value());
-                path = UrlParsingUtils.getPath(path);
-                routMap.get(Method.GET).put(path, request -> invoke(bean, method, request));
+                fillRouteMap(bean, method, HttpMethod.GET, () ->
+                        String.format("/%s/%s", rootPath, method.getAnnotation(GetMapping.class).value()));
             }
             if (method.isAnnotationPresent(PostMapping.class)) {
-                String path = String.format("/%s/%s", rootPath, method.getAnnotation(PostMapping.class).value());
-                path = UrlParsingUtils.getPath(path);
-                routMap.get(Method.POST).put(path, request -> invoke(bean, method, request));
+                fillRouteMap(bean, method, HttpMethod.POST, () ->
+                        String.format("/%s/%s", rootPath, method.getAnnotation(PostMapping.class).value()));
             }
         }
         return bean;
     }
 
+    private void fillRouteMap(Object bean, Method method, HttpMethod httpMethod, Supplier<String> supplier) {
+        String path = supplier.get();
+        path = UrlParsingUtils.getPath(path);
+        ArgumentResolver resolver = new ArgumentResolverImpl(requestBodyAdapter, new ArrayList<>());
+        routMap.get(httpMethod).put(path, request -> invoke(bean, method, request, resolver));
+    }
+
     @SneakyThrows
-    private Object invoke(Object object, java.lang.reflect.Method method, HttpRequest request) {
-        List<Object> objects = new ArrayList<>();
-        int index = 0;
-        for (Parameter parameter : method.getParameters()) {
-            if (parameter.isAnnotationPresent(RequestHeader.class)) {
-                objects.add(request.getHeaders().get(parameter.getAnnotation(RequestHeader.class).value()));
-            }
-            if (parameter.isAnnotationPresent(RequestParam.class)) {
-                String subUri = request.getUri().substring(request.getUri().lastIndexOf("?"));
-                objects.add(subUri.split("&")[index++].split("=")[1].trim());
-            }
-            if (parameter.isAnnotationPresent(RequestBody.class)) {
-                objects.add(requestBodyAdapter.bytesToObject(request.getBody(), parameter.getType()));
-            }
-        }
-        if (objects.isEmpty()) {
-            return method.invoke(object, request);
-        }
-        return method.invoke(object, objects.toArray());
+    private Object invoke(Object object, Method method, HttpRequest request, ArgumentResolver resolver) {
+        List<?> objects = resolver.getArguments(method, request);
+        return method.invoke(object, objects.isEmpty() ? request : objects.toArray());
     }
 
 }

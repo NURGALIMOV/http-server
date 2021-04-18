@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 import ru.inurgalimov.http.exception.*;
 import ru.inurgalimov.http.request.HttpRequest;
 import ru.inurgalimov.http.utils.HttpVersion;
-import ru.inurgalimov.http.utils.Method;
+import ru.inurgalimov.http.utils.HttpMethod;
 import ru.inurgalimov.http.utils.guava.Bytes;
 
 import java.io.IOException;
@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static ru.inurgalimov.http.utils.Method.POST;
+import static ru.inurgalimov.http.utils.HttpMethod.POST;
 
 @Component
 public class RequestHandlerImpl implements RequestHandler {
@@ -27,7 +27,7 @@ public class RequestHandlerImpl implements RequestHandler {
         if (input.read(buffer) > 0) {
             int requestLineIndex = Bytes.indexOf(buffer, END_OF_LINE, 0) + END_OF_LINE.length;
             String[] requestLineParts = getRequestLineParts(buffer, requestLineIndex);
-            Method method = Method.valueOfByString(requestLineParts[0])
+            HttpMethod method = HttpMethod.valueOfByString(requestLineParts[0])
                     .orElseThrow(() -> new UnsupportedMethodException("Invalid header: " + requestLineParts[0]));
             String uri = requestLineParts[1];
             HttpVersion version = HttpVersion.valueOfByString(requestLineParts[2]);

@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import ru.inurgalimov.http.adapter.AnswerAdapter;
 import ru.inurgalimov.http.request.HttpRequest;
-import ru.inurgalimov.http.utils.Method;
+import ru.inurgalimov.http.utils.HttpMethod;
 
 import java.util.*;
 import java.util.function.Function;
@@ -14,9 +14,9 @@ import java.util.function.Function;
 public class JavaConfig {
 
     @Bean
-    public Map<Method, Map<String, Function<HttpRequest, Object>>> routeMap() {
-        Map result = new EnumMap<Method, Map<String, Function<HttpRequest, Object>>>(Method.class);
-        Arrays.stream(Method.values()).forEach(method -> result.put(method, new HashMap<>()));
+    public Map<HttpMethod, Map<String, Function<HttpRequest, Object>>> routeMap() {
+        Map result = new EnumMap<HttpMethod, Map<String, Function<HttpRequest, Object>>>(HttpMethod.class);
+        Arrays.stream(HttpMethod.values()).forEach(method -> result.put(method, new HashMap<>()));
         return result;
     }
 
