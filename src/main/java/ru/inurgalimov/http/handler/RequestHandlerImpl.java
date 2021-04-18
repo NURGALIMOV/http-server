@@ -18,7 +18,7 @@ import static ru.inurgalimov.http.utils.Method.POST;
 public class RequestHandlerImpl implements RequestHandler {
 
     private static final byte[] END_OF_LINE = new byte[]{'\r', '\n'};
-    private static final byte[] LINE_BREAK = new byte[]{'\r', '\n', '\r', '\n'};
+    private static final byte[] END_HTTP_HEADER = new byte[]{'\r', '\n', '\r', '\n'};
 
     @Override
     public HttpRequest handleRequest(InputStream input) throws IOException {
@@ -32,7 +32,7 @@ public class RequestHandlerImpl implements RequestHandler {
             String uri = requestLineParts[1];
             HttpVersion version = HttpVersion.valueOfByString(requestLineParts[2]);
 
-            int endHeaderIndex = Bytes.indexOf(buffer, LINE_BREAK, 0);
+            int endHeaderIndex = Bytes.indexOf(buffer, END_HTTP_HEADER, 0);
             Map<String, String> headers = getHeaders(buffer, requestLineIndex, endHeaderIndex);
 
             int contentLength = Optional.ofNullable(headers.get("Content-Length"))
@@ -40,7 +40,7 @@ public class RequestHandlerImpl implements RequestHandler {
                     .orElse(0);
             byte[] body = new byte[0];
             if (method.equals(POST)) {
-                body = getBody(buffer, input, contentLength, endHeaderIndex + LINE_BREAK.length);
+                body = getBody(buffer, input, contentLength, endHeaderIndex + END_HTTP_HEADER.length);
             }
             return HttpRequest.builder()
                     .method(method)
