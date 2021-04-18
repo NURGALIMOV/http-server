@@ -1,9 +1,7 @@
 package ru.inurgalimov.http.handler;
 
 import org.springframework.stereotype.Component;
-import ru.inurgalimov.http.exception.BadHeaderException;
-import ru.inurgalimov.http.exception.EmptyRequestException;
-import ru.inurgalimov.http.exception.MalFormedRequestException;
+import ru.inurgalimov.http.exception.*;
 import ru.inurgalimov.http.request.HttpRequest;
 import ru.inurgalimov.http.utils.HttpVersion;
 import ru.inurgalimov.http.utils.Method;
@@ -30,7 +28,7 @@ public class RequestHandlerImpl implements RequestHandler {
             int requestLineIndex = Bytes.indexOf(buffer, END_OF_LINE, 0) + END_OF_LINE.length;
             String[] requestLineParts = getRequestLineParts(buffer, requestLineIndex);
             Method method = Method.valueOfByString(requestLineParts[0])
-                    .orElseThrow(() -> new BadHeaderException("Invalid header: " + requestLineParts[0]));
+                    .orElseThrow(() -> new UnsupportedMethodException("Invalid header: " + requestLineParts[0]));
             String uri = requestLineParts[1];
             HttpVersion version = HttpVersion.valueOfByString(requestLineParts[2]);
 
@@ -61,7 +59,7 @@ public class RequestHandlerImpl implements RequestHandler {
         }
         String[] result = new String(source, 0, index).trim().split(" ");
         if (result.length != 3) {
-            throw new BadHeaderException("Invalid request line");
+            throw new UnsupportedRequestLineException("Invalid request line");
         }
         return result;
     }
