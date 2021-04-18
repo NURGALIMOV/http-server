@@ -3,6 +3,8 @@ package ru.inurgalimov.http.handler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.inurgalimov.http.adapter.AnswerAdapter;
+import ru.inurgalimov.http.exception.NotFoundPathException;
+import ru.inurgalimov.http.exception.UnsupportedMethodException;
 import ru.inurgalimov.http.request.HttpRequest;
 import ru.inurgalimov.http.response.HttpResponse;
 import ru.inurgalimov.http.utils.HttpStatus;
@@ -12,6 +14,7 @@ import ru.inurgalimov.http.utils.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Component
@@ -23,7 +26,13 @@ public class MainHandler implements Handler {
 
     @Override
     public void handle(HttpRequest request, HttpResponse response) {
-        Object result = routeMap.get(request.getMethod()).get(getPath(request)).apply(request);
+        Map<String, Function<HttpRequest, Object>> functionMap = Optional.ofNullable(routeMap.get(request.getMethod()))
+                .orElseThrow(() ->
+                        new UnsupportedMethodException(String.format("Method %s unsupported", request.getMethod())));
+        String path = getPath(request);
+        Object result = Optional.ofNullable(functionMap.get(path))
+                .map(function -> function.apply(request))
+                .orElseThrow(() -> new NotFoundPathException(String.format("Not found handler for path: %s", path)));
         AnswerAdapter<?> adapter = Objects.isNull(result) ? adapters.get(null) :
                 adapters.getOrDefault(result.getClass(), adapters.get(Object.class));
         byte[] body = adapter.objectToBytes(result);
