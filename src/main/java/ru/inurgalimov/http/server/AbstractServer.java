@@ -14,7 +14,7 @@ import java.util.Map;
 
 public abstract class AbstractServer implements Server {
 
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
     public void listen(int port) {
