@@ -46,8 +46,6 @@ public abstract class AbstractServer implements Server {
 
     protected void defaultHandling(HttpRequest request, HttpResponse response) {
         response.setVersion(HttpVersion.HTTP_VERSION_11);
-        response.setBody(new byte[0]);
-        response.setHeaders(Map.of("Content-Length", "0"));
         response.setStatus(HttpStatus.NOT_FOUND);
     }
 
