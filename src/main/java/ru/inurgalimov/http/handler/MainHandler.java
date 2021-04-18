@@ -18,12 +18,12 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class MainHandler implements Handler {
 
-    private final Map<Method, Map<String, Function<HttpRequest, Object>>> routMap;
+    private final Map<Method, Map<String, Function<HttpRequest, Object>>> routeMap;
     private final Map<Class<?>, AnswerAdapter<?>> adapters;
 
     @Override
     public void handle(HttpRequest request, HttpResponse response) {
-        Object result = routMap.get(request.getMethod()).get(getPath(request)).apply(request);
+        Object result = routeMap.get(request.getMethod()).get(getPath(request)).apply(request);
         AnswerAdapter<?> adapter = Objects.isNull(result) ? adapters.get(null) :
                 adapters.getOrDefault(result.getClass(), adapters.get(Object.class));
         byte[] body = adapter.objectToBytes(result);
