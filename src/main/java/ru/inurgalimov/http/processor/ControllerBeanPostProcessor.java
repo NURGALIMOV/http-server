@@ -10,6 +10,7 @@ import ru.inurgalimov.http.adapter.RequestBodyAdapter;
 import ru.inurgalimov.http.annotation.*;
 import ru.inurgalimov.http.request.HttpRequest;
 import ru.inurgalimov.http.utils.Method;
+import ru.inurgalimov.http.utils.UrlParsingUtils;
 
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
@@ -43,24 +44,17 @@ public class ControllerBeanPostProcessor implements BeanPostProcessor {
         String rootPath = clazz.getAnnotation(Controller.class).value();
         for (var method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(GetMapping.class)) {
-                String path = getPath(rootPath, method, method.getAnnotation(GetMapping.class).value());
+                String path = String.format("/%s/%s", rootPath, method.getAnnotation(GetMapping.class).value());
+                path = UrlParsingUtils.getPath(path);
                 routMap.get(Method.GET).put(path, request -> invoke(bean, method, request));
             }
             if (method.isAnnotationPresent(PostMapping.class)) {
-                String path = getPath(rootPath, method, method.getAnnotation(PostMapping.class).value());
+                String path = String.format("/%s/%s", rootPath, method.getAnnotation(PostMapping.class).value());
+                path = UrlParsingUtils.getPath(path);
                 routMap.get(Method.POST).put(path, request -> invoke(bean, method, request));
             }
         }
         return bean;
-    }
-
-    private String getPath(String rootPath, java.lang.reflect.Method method, String value) {
-        String path = String.format("/%s/%s", rootPath, value);
-        int index = path.lastIndexOf("?");
-        if (index != -1) {
-            return path.substring(0, path.lastIndexOf("?"));
-        }
-        return path.replace("//", "/");
     }
 
     @SneakyThrows

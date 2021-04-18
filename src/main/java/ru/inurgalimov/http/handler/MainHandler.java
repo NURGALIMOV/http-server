@@ -10,6 +10,7 @@ import ru.inurgalimov.http.response.HttpResponse;
 import ru.inurgalimov.http.utils.HttpStatus;
 import ru.inurgalimov.http.utils.HttpVersion;
 import ru.inurgalimov.http.utils.Method;
+import ru.inurgalimov.http.utils.UrlParsingUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +30,7 @@ public class MainHandler implements Handler {
         Map<String, Function<HttpRequest, Object>> functionMap = Optional.ofNullable(routeMap.get(request.getMethod()))
                 .orElseThrow(() ->
                         new UnsupportedMethodException(String.format("Method %s unsupported", request.getMethod())));
-        String path = getPath(request);
+        String path = UrlParsingUtils.getPath(request.getUri());
         Object result = Optional.ofNullable(functionMap.get(path))
                 .map(function -> function.apply(request))
                 .orElseThrow(() -> new NotFoundPathException(String.format("Not found handler for path: %s", path)));
@@ -42,15 +43,6 @@ public class MainHandler implements Handler {
         header.put("Content-Length", String.valueOf(body.length));
         response.setHeaders(header);
         response.setBody(body);
-    }
-
-    private String getPath(HttpRequest request) {
-        String uri = request.getUri();
-        int index = uri.lastIndexOf("?");
-        if (index != -1) {
-            uri = uri.substring(0, uri.lastIndexOf("?"));
-        }
-        return uri;
     }
 
 }
