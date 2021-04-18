@@ -7,11 +7,11 @@ import ru.inurgalimov.http.handler.ResponseHandler;
 import ru.inurgalimov.http.handler.ResponseHandlerImpl;
 import ru.inurgalimov.http.request.HttpRequest;
 import ru.inurgalimov.http.response.HttpResponse;
-import ru.inurgalimov.http.utils.HttpStatus;
-import ru.inurgalimov.http.utils.HttpVersion;
 import ru.inurgalimov.http.utils.Method;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -57,13 +57,6 @@ public class ServerImpl extends AbstractServer {
                 .getOrDefault(request.getUri(), this::defaultHandling)
                 .accept(request, response);
         responseHandler.handleResponse(response, out);
-    }
-
-    private void defaultHandling(HttpRequest request, HttpResponse response) {
-        response.setVersion(HttpVersion.HTTP_VERSION_11);
-        response.setBody(new byte[0]);
-        response.setHeaders(Map.of("Content-Length", "0"));
-        response.setStatus(HttpStatus.NOT_FOUND);
     }
 
 }

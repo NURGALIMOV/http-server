@@ -2,10 +2,15 @@ package ru.inurgalimov.http.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.inurgalimov.http.request.HttpRequest;
+import ru.inurgalimov.http.response.HttpResponse;
+import ru.inurgalimov.http.utils.HttpStatus;
+import ru.inurgalimov.http.utils.HttpVersion;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Map;
 
 public abstract class AbstractServer implements Server {
 
@@ -38,5 +43,12 @@ public abstract class AbstractServer implements Server {
     }
 
     protected abstract void handle(InputStream in, OutputStream out) throws IOException;
+
+    protected void defaultHandling(HttpRequest request, HttpResponse response) {
+        response.setVersion(HttpVersion.HTTP_VERSION_11);
+        response.setBody(new byte[0]);
+        response.setHeaders(Map.of("Content-Length", "0"));
+        response.setStatus(HttpStatus.NOT_FOUND);
+    }
 
 }
