@@ -98,7 +98,7 @@ public class RequestHandlerImpl implements RequestHandler {
             input.reset();
             array = input.readNBytes(totalSize);
         }
-        return new String(array, endHeaderIndex, contentLength).getBytes();
+        return Arrays.copyOfRange(array, endHeaderIndex, totalSize);
     }
 
 }
