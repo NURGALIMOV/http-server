@@ -1,18 +1,16 @@
 package ru.inurgalimov.http.utils;
 
-import ru.inurgalimov.http.exception.BadHeaderException;
+import java.util.Arrays;
+import java.util.Optional;
 
 public enum Method {
     GET,
     POST;
 
-    public static Method valueOfByString(String method) {
-        for (Method m : Method.values()) {
-            if (method.equals(m.name())) {
-                return m;
-            }
-        }
-        throw new BadHeaderException("invalid header: " + method);
+    public static Optional<Method> valueOfByString(String method) {
+        return Arrays.stream(Method.values())
+                .filter(m -> method.equals(m.name()))
+                .findFirst();
     }
 
 }

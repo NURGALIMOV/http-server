@@ -29,7 +29,8 @@ public class RequestHandlerImpl implements RequestHandler {
         if (input.read(buffer) > 0) {
             int requestLineIndex = Bytes.indexOf(buffer, END_OF_LINE, 0) + END_OF_LINE.length;
             String[] requestLineParts = getRequestLineParts(buffer, requestLineIndex);
-            Method method = Method.valueOfByString(requestLineParts[0]);
+            Method method = Method.valueOfByString(requestLineParts[0])
+                    .orElseThrow(() -> new BadHeaderException("Invalid header: " + requestLineParts[0]));
             String uri = requestLineParts[1];
             HttpVersion version = HttpVersion.valueOfByString(requestLineParts[2]);
 
